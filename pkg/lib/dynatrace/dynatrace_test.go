@@ -7,11 +7,14 @@ import (
 )
 
 func TestCreateNewDynatraceHandler(t *testing.T) {
+	keptnEvent := &baseKeptnEvent{}
+	keptnEvent.project = "sockshop"
+	keptnEvent.stage = "dev"
+	keptnEvent.service = "carts"
+
 	dh := NewDynatraceHandler(
 		"dynatrace",
-		"sockshop",
-		"dev",
-		"carts",
+		keptnEvent,
 		map[string]string{
 			"Authorization": "Api-Token " + "test",
 		},
@@ -41,11 +44,14 @@ func TestCreateNewDynatraceHandler(t *testing.T) {
 
 // Test that unsupported metrics return an error
 func TestGetTimeseriesUnsupportedSLI(t *testing.T) {
+	keptnEvent := &baseKeptnEvent{}
+	keptnEvent.project = "sockshop"
+	keptnEvent.stage = "dev"
+	keptnEvent.service = "carts"
+
 	dh := NewDynatraceHandler(
 		"dynatrace",
-		"sockshop",
-		"dev",
-		"carts",
+		keptnEvent,
 		map[string]string{
 			"Authorization": "Api-Token " + "test",
 		},

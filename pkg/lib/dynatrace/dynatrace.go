@@ -74,10 +74,7 @@ type Handler struct {
 	ApiURL        string
 	Username      string
 	Password      string
-	Project       string
-	Stage         string
-	Service       string
-	Deployment    string
+	KeptnEvent    *common.baseKeptnEvent
 	HTTPClient    *http.Client
 	Headers       map[string]string
 	CustomQueries map[string]string
@@ -85,12 +82,10 @@ type Handler struct {
 }
 
 // NewDynatraceHandler returns a new dynatrace handler that interacts with the Dynatrace REST API
-func NewDynatraceHandler(apiURL string, project string, stage string, service string, headers map[string]string, customFilters []*keptnevents.SLIFilter, deployment string) *Handler {
+func NewDynatraceHandler(apiURL string, keptnEvent *common.baseKeptnEvent, headers map[string]string, customFilters []*keptnevents.SLIFilter, deployment string) *Handler {
 	ph := &Handler{
 		ApiURL:        apiURL,
-		Project:       project,
-		Stage:         stage,
-		Service:       service,
+		KeptnEvent:    keptnEvent,
 		HTTPClient:    &http.Client{},
 		Headers:       headers,
 		CustomFilters: customFilters,
@@ -309,10 +304,12 @@ func (ph *Handler) replaceQueryParameters(query string) string {
 	}
 
 	// apply default values
-	query = strings.Replace(query, "$PROJECT", ph.Project, -1)
+	/* query = strings.Replace(query, "$PROJECT", ph.Project, -1)
 	query = strings.Replace(query, "$STAGE", ph.Stage, -1)
 	query = strings.Replace(query, "$SERVICE", ph.Service, -1)
-	query = strings.Replace(query, "$DEPLOYMENT", ph.Deployment, -1)
+	query = strings.Replace(query, "$DEPLOYMENT", ph.Deployment, -1)*/
+
+	query = replaceKeptnPlaceholders(query, keptnEvent)
 
 	return query
 }

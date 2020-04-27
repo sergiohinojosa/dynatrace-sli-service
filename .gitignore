@@ -4,5 +4,8 @@
 # allow shared run configurations
 !.idea/runConfigurations/
 
+# local files
+_*
+
 vendor
 
