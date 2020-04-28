@@ -37,7 +37,8 @@ Content-Type: application/cloudevents+json
     "labels": {
       "testid": "12345",
       "buildnr": "build17",
-      "runby": "JohnDoe"
+      "runby": "JohnDoe",
+      "dttag" : "evalservice"
     }
   },
   "id": "432b41e2-e50e-4d55-a4ca-0076df5b0b29",
