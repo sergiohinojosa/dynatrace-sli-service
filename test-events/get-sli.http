@@ -20,15 +20,19 @@ Content-Type: application/cloudevents+json
     "customFilters": [
     ],
     "deploymentstrategy": "direct",
-    "end": "2019-11-19T09:26:53Z",
+    "start": "2020-04-27T09:18:14Z",
+    "end": "2020-04-27T09:26:53Z",
     "indicators": [
-      "response_time_p95"
+      "response_time_p95",
+      "response_time_p90",
+      "response_time_p50",
+      "error_rate",
+      "throughput"
     ],
-    "project": "sockshop",
-    "service": "carts",
+    "project": "demoproject",
+    "service": "evalservice",
     "sliProvider": "dynatrace",
     "stage": "dev",
-    "start": "2019-11-19T09:18:14Z",
     "teststrategy": "performance",
     "labels": {
       "testid": "12345",

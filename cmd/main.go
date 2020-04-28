@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
+	"github.com/ghodss/yaml"
+
+	"github.com/keptn-contrib/dynatrace-sli-service/pkg/common"
 	"github.com/keptn-contrib/dynatrace-sli-service/pkg/lib/dynatrace"
-	"gopkg.in/yaml.v2"
 
 	"github.com/cloudevents/sdk-go/pkg/cloudevents"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
@@ -24,7 +26,6 @@ import (
 	configutils "github.com/keptn/go-utils/pkg/configuration-service/utils"
 	keptnevents "github.com/keptn/go-utils/pkg/events"
 	keptnutils "github.com/keptn/go-utils/pkg/utils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -43,6 +44,11 @@ func main() {
 	if err := envconfig.Process("", &env); err != nil {
 		log.Fatalf("Failed to process env var: %s", err)
 	}
+
+	if common.RunLocal || common.RunLocalTest {
+		log.Println("env=runlocal: Running with local filesystem to fetch resources")
+	}
+
 	os.Exit(_main(os.Args[1:], env))
 }
 
@@ -97,27 +103,28 @@ func retrieveMetrics(event cloudevents.Event) error {
 	stdLogger.Info("Retrieving Dynatrace timeseries metrics")
 
 	kubeClient, err := keptnutils.GetKubeAPI(true)
-	if err != nil {
+	if err != nil && !(common.RunLocal || common.RunLocalTest) {
 		stdLogger.Error("could not create Kubernetes client")
 		return errors.New("could not create Kubernetes client")
 	}
 
 	//
 	// see if there is a dynatrace.conf.yaml
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = eventData.Project
-	keptnEvent.stage = eventData.Stage
-	keptnEvent.service = eventData.Service
-	keptnEvent.testStrategy = eventData.TestStrategy
-	keptnEvent.image = eventData.Image
-	keptnEvent.tag = eventData.Tag
-	keptnEvent.labels = eventData.Labels
-	keptnEvent.context = context
-	dynatraceConfigFile, _ := getDynatraceConfig(keptnEvent, stdLogger)
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = eventData.Project
+	keptnEvent.Stage = eventData.Stage
+	keptnEvent.Service = eventData.Service
+	keptnEvent.TestStrategy = eventData.TestStrategy
+	keptnEvent.Labels = eventData.Labels
+	keptnEvent.Context = shkeptncontext
+	dynatraceConfigFile, _ := common.GetDynatraceConfig(keptnEvent, stdLogger)
 
-	dtCredentials, err := getDynatraceCredentials(
-		dynatraceConfigFile != nil ? dynatraceConfigFile.DtCreds : "", 
-		eventData.Project, kubeClient, stdLogger)
+	dtCreds := ""
+	if dynatraceConfigFile != nil {
+		dtCreds = dynatraceConfigFile.DtCreds
+		stdLogger.Debug("Found dynatrace.conf.yaml with DTCreds: " + dtCreds)
+	}
+	dtCredentials, err := getDynatraceCredentials(dtCreds, eventData.Project, kubeClient, stdLogger)
 
 	if err != nil {
 		stdLogger.Debug(err.Error())
@@ -151,14 +158,12 @@ func retrieveMetrics(event cloudevents.Event) error {
 		return err
 	}
 
-	dynatraceHandler := dynatrace.NewDynatraceHandler(
-		dtCredentials.Tenant, // dynatraceAPIUrl,
+	dynatraceHandler := dynatrace.NewDynatraceHandler(dtCredentials.Tenant, // dynatraceAPIUrl,
 		keptnEvent,
 		map[string]string{
 			"Authorization": "Api-Token " + dtCredentials.ApiToken,
 		},
 		eventData.CustomFilters,
-		eventData.Deployment,
 	)
 
 	if projectCustomQueries != nil {
@@ -202,14 +207,55 @@ func retrieveMetrics(event cloudevents.Event) error {
 
 	log.Println("Finished fetching metrics; Sending event now ...")
 
+	if common.RunLocal || common.RunLocalTest {
+		log.Println("(RunLocal Output) Here are the results:")
+		for _, v := range sliResults {
+			log.Println(fmt.Sprintf("%s:%.2f - Success: %t - Error: %s", v.Metric, v.Value, v.Success, v.Message))
+		}
+		return nil
+	}
+
 	return sendInternalGetSLIDoneEvent(shkeptncontext, eventData.Project, eventData.Service, eventData.Stage,
 		sliResults, eventData.Start, eventData.End, eventData.TestStrategy, eventData.DeploymentStrategy,
 		eventData.Deployment, eventData.Labels)
 }
 
+/**
+ * Loads SLIs from a local file and adds it to the SLI map
+ */
+func addResourceContentToSLIMap(SLIs map[string]string, sliFilePath string, logger *keptnutils.Logger) (map[string]string, error) {
+	localFileContent, err := ioutil.ReadFile(sliFilePath)
+	if err != nil {
+		logMessage := fmt.Sprintf("Couldn't load file content from %s", sliFilePath)
+		logger.Info(logMessage)
+		return nil, nil
+	}
+	logger.Info("Loaded LOCAL file " + sliFilePath)
+	fileContent := string(localFileContent)
+
+	if fileContent != "" {
+		sliConfig := configutils.SLIConfig{}
+		err := yaml.Unmarshal([]byte(fileContent), &sliConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		for key, value := range sliConfig.Indicators {
+			SLIs[key] = value
+		}
+	}
+	return SLIs, nil
+}
+
 // getCustomQueries returns custom queries as stored in configuration store
 func getCustomQueries(project string, stage string, service string, kubeClient v1.CoreV1Interface, logger *keptnutils.Logger) (map[string]string, error) {
 	logger.Info("Checking for custom SLI queries")
+
+	if common.RunLocal || common.RunLocalTest {
+		var sliMap = map[string]string{}
+		sliMap, _ = addResourceContentToSLIMap(sliMap, "dynatrace/sli.yaml", logger)
+		return sliMap, nil
+	}
 
 	endPoint, err := getServiceEndpoint(configservice)
 	if err != nil {
@@ -262,18 +308,17 @@ func getCustomQueries(project string, stage string, service string, kubeClient v
  * returns the DTCredentials
  * First looks at the passed secretName. If null validates if there is a dynatrace-credentials-%PROJECT% - if not - defaults to "dynatrace" global secret
  */
-func getDynatraceCredentials(secretName string, project string, kubeClient v1.CoreV1Interface, logger *keptnutils.Logger) (*DTCredentials, error) {
+func getDynatraceCredentials(secretName string, project string, kubeClient v1.CoreV1Interface, logger *keptnutils.Logger) (*common.DTCredentials, error) {
 
 	secretNames := []string{secretName, fmt.Sprintf("dynatrace-credentials-%s", project), "dynatrace-credentials", "dynatrace"}
-	dtCredentials *DTCredentials = nil
 
-	for _,secret in range secretNames {
-		dtCredentials = common.GetDTCredentials(secret)
-		if dtCredentials != nil) {
+	for _, secret := range secretNames {
+		dtCredentials, _ := common.GetDTCredentials(secret)
+		if dtCredentials != nil {
 			return dtCredentials, nil
 		}
-	} 
-	
+	}
+
 	return nil, errors.New("Couldn't find any dynatrace specific secrets in namespace keptn")
 }
 
@@ -295,11 +340,11 @@ func getDynatraceCredentials(secretName string, project string, kubeClient v1.Co
 		return "", "", errors.New(fmt.Sprintf("Credentials %s does not contain a field 'dynatrace-credentials'", secretName))
 	}
 
-	
+
 	//	data format:
 	//	tenant: string
 	//	apiToken: string
-	
+
 	dtCreds := &dynatraceCredentials{}
 	err = yaml.Unmarshal(secretValue, dtCreds)
 

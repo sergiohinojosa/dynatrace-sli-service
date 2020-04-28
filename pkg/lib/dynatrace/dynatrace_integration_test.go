@@ -63,9 +63,10 @@ func TestGetSLIValue(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymentStrategy = ""
 
 	// dh := NewDynatraceHandler("http://dynatrace", "sockshop", "dev", "carts", nil, nil, "")
-	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil, "")
+	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
 
 	start := time.Unix(1571649084, 0).UTC().Format(time.RFC3339)
@@ -112,8 +113,9 @@ func TestGetSLIValueWithOldandNewCustomQueryFormat(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymentStrategy = ""
 
-	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil, "")
+	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
 
 	// overwrite custom queries with the new format (starting with metricSelector=)
@@ -176,8 +178,9 @@ func TestGetSLIValueWithEmptyResult(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymentStrategy = ""
 
-	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil, "")
+	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
 
 	start := time.Unix(1571649084, 0).UTC().Format(time.RFC3339)
@@ -224,8 +227,9 @@ func TestGetSLIValueWithoutExpectedMetric(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymentStrategy = ""
 
-	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil, "")
+	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
 
 	start := time.Unix(1571649084, 0).UTC().Format(time.RFC3339)
@@ -243,8 +247,9 @@ func TestGetSLIEndTimeFuture(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymentStrategy = ""
 
-	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil, "")
+	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 
 	start := time.Now().Format(time.RFC3339)
 	// artificially increase end time to be in the future
@@ -262,7 +267,9 @@ func TestGetSLIStartTimeAfterEndTime(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
-	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil, "")
+	keptnEvent.deploymentStrategy = ""
+
+	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 
 	start := time.Now().Format(time.RFC3339)
 	// artificially increase end time to be in the future
@@ -308,8 +315,9 @@ func TestGetSLISleep(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymentStrategy = ""
 
-	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil, "")
+	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
 
 	start := time.Now().Add(-5 * time.Minute).Format(time.RFC3339)
@@ -335,8 +343,9 @@ func TestGetSLIValueWithErrorResponse(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymentStrategy = ""
 
-	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil, "")
+	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
 
 	start := time.Unix(1571649084, 0).UTC().Format(time.RFC3339)

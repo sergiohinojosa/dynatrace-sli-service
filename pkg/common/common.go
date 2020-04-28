@@ -1,12 +1,21 @@
 package common
 
 import (
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
+
+	"github.com/ghodss/yaml"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"	
+	configutils "github.com/keptn/go-utils/pkg/configuration-service/utils"
+
+	keptnutils "github.com/keptn/go-utils/pkg/utils"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var RunLocal = (os.Getenv("env") == "runlocal")
@@ -17,6 +26,7 @@ var RunLocalTest = (os.Getenv("env") == "runlocaltest")
  */
 const DynatraceConfigFilename = "dynatrace/dynatrace.conf.yaml"
 const DynatraceConfigFilenameLOCAL = "dynatrace/_dynatrace.conf.yaml"
+
 type DynatraceConfigFile struct {
 	SpecVersion string `json:"spec_version" yaml:"spec_version"`
 	DtCreds     string `json:"dtCreds",omitempty yaml:"dtCreds",omitempty`
@@ -28,22 +38,22 @@ type DTCredentials struct {
 	PaaSToken string `json:"DT_PAAS_TOKEN" yaml:"DT_PAAS_TOKEN"`
 }
 
-type baseKeptnEvent struct {
-	context string
-	source  string
-	event   string
+type BaseKeptnEvent struct {
+	Context string
+	Source  string
+	Event   string
 
-	project            string
-	stage              string
-	service            string
-	deployment         string
-	testStrategy       string
-	deploymentStrategy string
+	Project            string
+	Stage              string
+	Service            string
+	Deployment         string
+	TestStrategy       string
+	DeploymentStrategy string
 
-	image string
-	tag   string
+	Image string
+	Tag   string
 
-	labels map[string]string
+	Labels map[string]string
 }
 
 func GetKubernetesClient() (*kubernetes.Clientset, error) {
@@ -76,7 +86,6 @@ func GetKeptnDomain() (string, error) {
 	return keptnDomain, nil
 }
 
-
 //
 // replaces $ placeholders with actual values
 // $CONTEXT, $EVENT, $SOURCE
@@ -86,56 +95,72 @@ func GetKeptnDomain() (string, error) {
 // $ENV.XXXX    -> will replace that with an env variable called XXXX
 // $SECRET.YYYY -> will replace that with the k8s secret called YYYY
 //
-func replaceKeptnPlaceholders(input string, keptnEvent *baseKeptnEvent) string {
+func ReplaceKeptnPlaceholders(input string, keptnEvent *BaseKeptnEvent) string {
 	result := input
 
 	// first we do the regular keptn values
-	result = strings.Replace(result, "$CONTEXT", keptnEvent.context, -1)
-	result = strings.Replace(result, "$EVENT", keptnEvent.event, -1)
-	result = strings.Replace(result, "$SOURCE", keptnEvent.source, -1)
-	result = strings.Replace(result, "$PROJECT", keptnEvent.project, -1)
-	result = strings.Replace(result, "$STAGE", keptnEvent.stage, -1)
-	result = strings.Replace(result, "$SERVICE", keptnEvent.service, -1)
-	result = strings.Replace(result, "$DEPLOYMENT", keptnEvent.deployment, -1)
-	result = strings.Replace(result, "$TESTSTRATEGY", keptnEvent.testStrategy, -1)
+	result = strings.Replace(result, "$CONTEXT", keptnEvent.Context, -1)
+	result = strings.Replace(result, "$EVENT", keptnEvent.Event, -1)
+	result = strings.Replace(result, "$SOURCE", keptnEvent.Source, -1)
+	result = strings.Replace(result, "$PROJECT", keptnEvent.Project, -1)
+	result = strings.Replace(result, "$STAGE", keptnEvent.Stage, -1)
+	result = strings.Replace(result, "$SERVICE", keptnEvent.Service, -1)
+	result = strings.Replace(result, "$DEPLOYMENT", keptnEvent.Deployment, -1)
+	result = strings.Replace(result, "$TESTSTRATEGY", keptnEvent.TestStrategy, -1)
 
 	// now we do the labels
-	for key, value := range keptnEvent.labels {
+	for key, value := range keptnEvent.Labels {
 		result = strings.Replace(result, "$LABEL."+key, value, -1)
 	}
 
 	// now we do all environment variables
+	for _, env := range os.Environ() {
+		pair := strings.SplitN(env, "=", 2)
+		result = strings.Replace(result, "$ENV."+pair[0], pair[1], -1)
+	}
+
+	// TODO: iterate through k8s secrets!
+
+	return result
+}
+
+func GetConfigurationServiceURL() string {
+	if os.Getenv("CONFIGURATION_SERVICE_URL") != "" {
+		return os.Getenv("CONFIGURATION_SERVICE_URL")
+	}
+	return "configuration-service.keptn.svc.cluster.local:8080"
+}
 
 //
 // Loads dynatrace.conf for the current service
 //
-func getDynatraceConfig(keptnEvent *baseKeptnEvent, logger *keptn.Logger) (*DynatraceConfigFile, error) {
+func GetDynatraceConfig(keptnEvent *BaseKeptnEvent, logger *keptnutils.Logger) (*DynatraceConfigFile, error) {
 
 	logger.Info("Loading dynatrace.conf.yaml")
 	// if we run in a runlocal mode we are just getting the file from the local disk
 	var fileContent string
-	if common.RunLocal {
+	if RunLocal {
 		localFileContent, err := ioutil.ReadFile(DynatraceConfigFilenameLOCAL)
 		if err != nil {
-			logMessage := fmt.Sprintf("No %s file found LOCALLY for service %s in stage %s in project %s", DynatraceConfigFilenameLOCAL, keptnEvent.service, keptnEvent.stage, keptnEvent.project)
+			logMessage := fmt.Sprintf("No %s file found LOCALLY for service %s in stage %s in project %s", DynatraceConfigFilenameLOCAL, keptnEvent.Service, keptnEvent.Stage, keptnEvent.Project)
 			logger.Info(logMessage)
 			return nil, nil
 		}
 		logger.Info("Loaded LOCAL file " + DynatraceConfigFilenameLOCAL)
 		fileContent = string(localFileContent)
 	} else {
-		resourceHandler := utils.NewResourceHandler("configuration-service:8080")
+		resourceHandler := configutils.NewResourceHandler(GetConfigurationServiceURL())
 
 		// Lets search on SERVICE-LEVEL
-		keptnResourceContent, err := resourceHandler.GetServiceResource(keptnEvent.project, keptnEvent.stage, keptnEvent.service, DynatraceConfigFilename)
+		keptnResourceContent, err := resourceHandler.GetServiceResource(keptnEvent.Project, keptnEvent.Stage, keptnEvent.Service, DynatraceConfigFilename)
 		if err != nil || keptnResourceContent == nil || keptnResourceContent.ResourceContent == "" {
 			// Lets search on STAGE-LEVEL
-			keptnResourceContent, err = resourceHandler.GetStageResource(keptnEvent.project, keptnEvent.stage, DynatraceConfigFilename)
+			keptnResourceContent, err = resourceHandler.GetStageResource(keptnEvent.Project, keptnEvent.Stage, DynatraceConfigFilename)
 			if err != nil || keptnResourceContent == nil || keptnResourceContent.ResourceContent == "" {
 				// Lets search on PROJECT-LEVEL
-				keptnResourceContent, err = resourceHandler.GetProjectResource(keptnEvent.project, DynatraceConfigFilename)
+				keptnResourceContent, err = resourceHandler.GetProjectResource(keptnEvent.Project, DynatraceConfigFilename)
 				if err != nil || keptnResourceContent == nil || keptnResourceContent.ResourceContent == "" {
-					logger.Debug(fmt.Sprintf("No Keptn Resource found: %s/%s/%s/%s - %s", keptnEvent.project, keptnEvent.stage, keptnEvent.service, DynatraceConfigFilename, err))
+					logger.Debug(fmt.Sprintf("No Keptn Resource found: %s/%s/%s/%s - %s", keptnEvent.Project, keptnEvent.Stage, keptnEvent.Service, DynatraceConfigFilename, err))
 					return nil, err
 				}
 
@@ -153,7 +178,7 @@ func getDynatraceConfig(keptnEvent *baseKeptnEvent, logger *keptn.Logger) (*Dyna
 	dynatraceConfFile, err := parseDynatraceConfigFile([]byte(fileContent))
 
 	if err != nil {
-		logMessage := fmt.Sprintf("Couldn't parse %s file found for service %s in stage %s in project %s. Error: %s", DynatraceConfigFilename, keptnEvent.service, keptnEvent.stage, keptnEvent.project, err.Error())
+		logMessage := fmt.Sprintf("Couldn't parse %s file found for service %s in stage %s in project %s. Error: %s", DynatraceConfigFilename, keptnEvent.Service, keptnEvent.Stage, keptnEvent.Project, err.Error())
 		logger.Error(logMessage)
 		return nil, errors.New(logMessage)
 	}
@@ -178,34 +203,35 @@ func parseDynatraceConfigFile(input []byte) (*DynatraceConfigFile, error) {
 /**
  * Pulls the Dynatrace Credentials from the passed secret
  */
- func (dt *DynatraceHelper) GetDTCredentials(dynatraceSecretName string) (*DTCredentials, error) {
+func GetDTCredentials(dynatraceSecretName string) (*DTCredentials, error) {
 	if dynatraceSecretName == "" {
 		return nil, nil
 	}
 
 	dtCreds := &DTCredentials{}
-	if common.RunLocal || common.RunLocalTest {
+	if RunLocal || RunLocalTest {
+		// if we RunLocal we take it from the env-variables
 		dtCreds.Tenant = os.Getenv("DT_TENANT")
 		dtCreds.ApiToken = os.Getenv("DT_API_TOKEN")
 		dtCreds.PaaSToken = os.Getenv("DT_PAAS_TOKEN")
 	} else {
-		kubeAPI, err := common.GetKubernetesClient()
+		kubeAPI, err := GetKubernetesClient()
 		if err != nil {
 			return nil, err
 		}
 		secret, err := kubeAPI.CoreV1().Secrets("keptn").Get(dynatraceSecretName, metav1.GetOptions{})
-	
+
 		if err != nil {
 			return nil, err
 		}
-	
+
 		if string(secret.Data["DT_TENANT"]) == "" || string(secret.Data["DT_API_TOKEN"]) == "" || string(secret.Data["DT_PAAS_TOKEN"]) == "" {
 			return nil, errors.New("invalid or no Dynatrace credentials found")
 		}
-	
+
 		dtCreds.Tenant = string(secret.Data["DT_TENANT"])
 		dtCreds.ApiToken = string(secret.Data["DT_API_TOKEN"])
-		dtCreds.PaaSToken = string(secret.Data["DT_PAAS_TOKEN"])	
+		dtCreds.PaaSToken = string(secret.Data["DT_PAAS_TOKEN"])
 	}
 
 	// ensure URL always has http or https in front
@@ -213,7 +239,7 @@ func parseDynatraceConfigFile(input []byte) (*DynatraceConfigFile, error) {
 		dtCreds.Tenant = dtCreds.Tenant
 	} else {
 		dtCreds.Tenant = "https://" + dtCreds.Tenant
-	}	
+	}
 
 	return dtCreds, nil
 }

@@ -11,6 +11,7 @@ func TestCreateNewDynatraceHandler(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymenttype = "direct"
 
 	dh := NewDynatraceHandler(
 		"dynatrace",
@@ -19,7 +20,6 @@ func TestCreateNewDynatraceHandler(t *testing.T) {
 			"Authorization": "Api-Token " + "test",
 		},
 		nil,
-		"direct",
 	)
 
 	if dh.ApiURL != "dynatrace" {
@@ -48,6 +48,7 @@ func TestGetTimeseriesUnsupportedSLI(t *testing.T) {
 	keptnEvent.project = "sockshop"
 	keptnEvent.stage = "dev"
 	keptnEvent.service = "carts"
+	keptnEvent.deploymentStrategy = ""
 
 	dh := NewDynatraceHandler(
 		"dynatrace",
@@ -56,7 +57,6 @@ func TestGetTimeseriesUnsupportedSLI(t *testing.T) {
 			"Authorization": "Api-Token " + "test",
 		},
 		nil,
-		"",
 	)
 
 	got, err := dh.getTimeseriesConfig("foobar")

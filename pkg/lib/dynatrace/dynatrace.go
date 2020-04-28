@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/keptn-contrib/dynatrace-sli-service/pkg/common"
+
 	keptnevents "github.com/keptn/go-utils/pkg/events"
 )
 
@@ -74,7 +76,7 @@ type Handler struct {
 	ApiURL        string
 	Username      string
 	Password      string
-	KeptnEvent    *common.baseKeptnEvent
+	KeptnEvent    *common.BaseKeptnEvent
 	HTTPClient    *http.Client
 	Headers       map[string]string
 	CustomQueries map[string]string
@@ -82,14 +84,13 @@ type Handler struct {
 }
 
 // NewDynatraceHandler returns a new dynatrace handler that interacts with the Dynatrace REST API
-func NewDynatraceHandler(apiURL string, keptnEvent *common.baseKeptnEvent, headers map[string]string, customFilters []*keptnevents.SLIFilter, deployment string) *Handler {
+func NewDynatraceHandler(apiURL string, keptnEvent *common.BaseKeptnEvent, headers map[string]string, customFilters []*keptnevents.SLIFilter) *Handler {
 	ph := &Handler{
 		ApiURL:        apiURL,
 		KeptnEvent:    keptnEvent,
 		HTTPClient:    &http.Client{},
 		Headers:       headers,
 		CustomFilters: customFilters,
-		Deployment:    deployment,
 	}
 
 	return ph
@@ -309,7 +310,7 @@ func (ph *Handler) replaceQueryParameters(query string) string {
 	query = strings.Replace(query, "$SERVICE", ph.Service, -1)
 	query = strings.Replace(query, "$DEPLOYMENT", ph.Deployment, -1)*/
 
-	query = replaceKeptnPlaceholders(query, keptnEvent)
+	query = common.ReplaceKeptnPlaceholders(query, ph.KeptnEvent)
 
 	return query
 }
