@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keptn-contrib/dynatrace-sli-service/pkg/common"
 	"github.com/keptn/go-utils/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -59,11 +60,11 @@ func TestGetSLIValue(t *testing.T) {
 	httpClient, teardown := testingHTTPClient(h)
 	defer teardown()
 
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	// dh := NewDynatraceHandler("http://dynatrace", "sockshop", "dev", "carts", nil, nil, "")
 	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
@@ -109,11 +110,11 @@ func TestGetSLIValueWithOldandNewCustomQueryFormat(t *testing.T) {
 	httpClient, teardown := testingHTTPClient(h)
 	defer teardown()
 
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
@@ -174,11 +175,11 @@ func TestGetSLIValueWithEmptyResult(t *testing.T) {
 	httpClient, teardown := testingHTTPClient(h)
 	defer teardown()
 
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
@@ -223,11 +224,11 @@ func TestGetSLIValueWithoutExpectedMetric(t *testing.T) {
 	httpClient, teardown := testingHTTPClient(h)
 	defer teardown()
 
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
@@ -243,11 +244,11 @@ func TestGetSLIValueWithoutExpectedMetric(t *testing.T) {
 
 // Tests what happens if the end-time is in the future
 func TestGetSLIEndTimeFuture(t *testing.T) {
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 
@@ -263,11 +264,11 @@ func TestGetSLIEndTimeFuture(t *testing.T) {
 
 // Tests what happens if start-time is after end-time
 func TestGetSLIStartTimeAfterEndTime(t *testing.T) {
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 
@@ -311,11 +312,11 @@ func TestGetSLISleep(t *testing.T) {
 	httpClient, teardown := testingHTTPClient(h)
 	defer teardown()
 
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient
@@ -339,11 +340,11 @@ func TestGetSLIValueWithErrorResponse(t *testing.T) {
 	httpClient, teardown := testingHTTPClient(h)
 	defer teardown()
 
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	dh := NewDynatraceHandler("http://dynatrace", keptnEvent, nil, nil)
 	dh.HTTPClient = httpClient

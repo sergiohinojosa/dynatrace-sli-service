@@ -4,14 +4,16 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/keptn-contrib/dynatrace-sli-service/pkg/common"
 )
 
 func TestCreateNewDynatraceHandler(t *testing.T) {
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymenttype = "direct"
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = "direct"
 
 	dh := NewDynatraceHandler(
 		"dynatrace",
@@ -26,29 +28,29 @@ func TestCreateNewDynatraceHandler(t *testing.T) {
 		t.Errorf("dh.ApiURL=%s; want dynatrace", dh.ApiURL)
 	}
 
-	if dh.Project != "sockshop" {
-		t.Errorf("dh.Project=%s; want sockshop", dh.Project)
+	if dh.KeptnEvent.Project != "sockshop" {
+		t.Errorf("dh.Project=%s; want sockshop", dh.KeptnEvent.Project)
 	}
 
-	if dh.Stage != "dev" {
-		t.Errorf("dh.Stage=%s; want dev", dh.Stage)
+	if dh.KeptnEvent.Stage != "dev" {
+		t.Errorf("dh.Stage=%s; want dev", dh.KeptnEvent.Stage)
 	}
 
-	if dh.Service != "carts" {
-		t.Errorf("dh.Service=%s; want carts", dh.Service)
+	if dh.KeptnEvent.Service != "carts" {
+		t.Errorf("dh.Service=%s; want carts", dh.KeptnEvent.Service)
 	}
-	if dh.Deployment != "direct" {
-		t.Errorf("dh.Deployment=%s; want direct", dh.Service)
+	if dh.KeptnEvent.DeploymentStrategy != "direct" {
+		t.Errorf("dh.Deployment=%s; want direct", dh.KeptnEvent.DeploymentStrategy)
 	}
 }
 
 // Test that unsupported metrics return an error
 func TestGetTimeseriesUnsupportedSLI(t *testing.T) {
-	keptnEvent := &baseKeptnEvent{}
-	keptnEvent.project = "sockshop"
-	keptnEvent.stage = "dev"
-	keptnEvent.service = "carts"
-	keptnEvent.deploymentStrategy = ""
+	keptnEvent := &common.BaseKeptnEvent{}
+	keptnEvent.Project = "sockshop"
+	keptnEvent.Stage = "dev"
+	keptnEvent.Service = "carts"
+	keptnEvent.DeploymentStrategy = ""
 
 	dh := NewDynatraceHandler(
 		"dynatrace",
