@@ -21,10 +21,11 @@ By default, even if you do not specifiy a custom SLI.yaml, the following SLIs ar
 
 ## Compatibility Matrix
 
-| Keptn Version    | [Dynatrace-SLI-Service Service Image](https://hub.docker.com/r/keptncontrib/dynatrace-sli-service/tags) |
-|:----------------:|:----------------------------------------:|
-|       0.6.0      | keptncontrib/dynatrace-sli-service:0.3.0 |
-|       0.6.1      | keptncontrib/dynatrace-sli-service:0.4.0[^1] |
+| Keptn Version    | [Dynatrace-SLI-Service Service Image](https://hub.docker.com/r/keptncontrib/dynatrace-sli-service/tags) | Description |
+|:----------------:|:----------------------------------------:|--------------------------------------------------|
+|       0.6.0      | keptncontrib/dynatrace-sli-service:0.3.0 |  |
+|       0.6.1      | keptncontrib/dynatrace-sli-service:0.4.0[^1] | Default installation with Keptn 0.6.1 |
+|       0.6.1      | keptncontrib/dynatrace-sli-service:0.5.0 | Added support for dynatrace.conf.yaml to support multiple Dynatrace environments. Also added support of more placeholders in SLI.yaml, e.g: $LABEL.yourlabel |
 
 [^1] Not available yet
 
