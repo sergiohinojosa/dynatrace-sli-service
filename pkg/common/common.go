@@ -225,8 +225,8 @@ func GetDTCredentials(dynatraceSecretName string) (*DTCredentials, error) {
 			return nil, err
 		}
 
-		if string(secret.Data["DT_TENANT"]) == "" || string(secret.Data["DT_API_TOKEN"]) == "" || string(secret.Data["DT_PAAS_TOKEN"]) == "" {
-			return nil, errors.New("invalid or no Dynatrace credentials found")
+		if string(secret.Data["DT_TENANT"]) == "" || string(secret.Data["DT_API_TOKEN"]) == "" { //|| string(secret.Data["DT_PAAS_TOKEN"]) == "" {
+			return nil, errors.New("invalid or no Dynatrace credentials found. Need DT_TENANT & DT_API_TOKEN stored in secret!")
 		}
 
 		dtCreds.Tenant = string(secret.Data["DT_TENANT"])

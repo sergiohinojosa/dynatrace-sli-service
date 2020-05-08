@@ -313,9 +313,14 @@ func getDynatraceCredentials(secretName string, project string, kubeClient v1.Co
 	secretNames := []string{secretName, fmt.Sprintf("dynatrace-credentials-%s", project), "dynatrace-credentials", "dynatrace"}
 
 	for _, secret := range secretNames {
-		dtCredentials, _ := common.GetDTCredentials(secret)
+		logger.Info("getDynatraceCredentials: " + secret)
+		dtCredentials, err := common.GetDTCredentials(secret)
 		if dtCredentials != nil {
 			return dtCredentials, nil
+		} else {
+			if err != nil {
+				logger.Info(err.Error())
+			}
 		}
 	}
 
